@@ -1,73 +1,83 @@
+import 'package:chart_example/blocs/data/repositories/task_repository.dart';
 import 'package:chart_example/blocs/task_bloc/task_event.dart';
 import 'package:chart_example/blocs/task_bloc/task_state.dart';
-import 'package:chart_example/models/task.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class TaskBloc extends Bloc<TaskEvent, TaskState> {
-  final List<Task> _task = [
-    Task(
-      id: 1,
-      title: "title",
-      description: "description",
-      createAt: DateTime.now(),
-    ),
-    Task(
-      id: 2,
-      title: "title",
-      description: "description",
-      createAt: DateTime.now(),
-    ),
-    Task(
-      id: 3,
-      title: "title",
-      description: "description",
-      createAt: DateTime.now(),
-    ),
-  ];
+import '../data/data_sources/app_database.dart';
 
-  TaskBloc() : super(TaskInitial()) {
+class TaskBloc extends Bloc<TaskEvent, TaskState> {
+  final TaskRepository _repository;
+
+  Stream<List<Task>>? _taskStream;
+
+  TaskBloc(this._repository) : super(TaskInitial()) {
     on<LoadTask>(_onLoadTask);
     on<ToggleTask>(_onToggleTask);
     on<AddTask>(_onAddTask);
+    on<EditTask>(_onEditTask);
+    on<DeleteTask>(_onDeleteTask);
   }
 
   void _onLoadTask(LoadTask event, Emitter<TaskState> emit) {
-    emit(TaskLoaded(tasks: _task));
+    _taskStream = _repository.watchAllTask();
+    _taskStream!.listen((tasks) {
+      emit(TaskLoaded(tasks));
+    });
   }
 
-  void _onToggleTask(ToggleTask event, Emitter<TaskState> emit) {
+  Future<void> _onToggleTask(ToggleTask event, Emitter<TaskState> emit) async {
     if (state is TaskLoaded) {
-      final tasks = (state as TaskLoaded).tasks.map((task) {
+      final currentTasks = (state as TaskLoaded).tasks;
+      final updatedTasks = currentTasks.map((task) {
         if (task.id == event.taskId) {
           return task.copyWith(isDone: !task.isDone);
         }
         return task;
       }).toList();
-      emit(TaskLoaded(tasks: tasks));
 
-      ////
-    }
-  }
+      // Cập nhật UI trước
+      emit(TaskLoaded(updatedTasks));
 
-  void _onAddTask(AddTask event, Emitter<TaskState> emit) {
-    Task t = Task(
-      id: _task.length + 1,
-      title: event.title,
-      description: event.description,
-      createAt: event.createAt,
-    );
-    _task.add(t);
-    emit(TaskLoaded(tasks: _task));
-  }
-  void _onEditTask(EditTask event, Emitter<TaskState> emit){
-    try{
-      if(state is TaskLoaded){
-        final task = (state as TaskLoaded).tasks.firstWhere((t)=> t.id == event.id);
-        _task.remove(task);
-        _task.add()
+      try {
+        final taskToUpdate = currentTasks.firstWhere((task) => task.id == event.taskId);
+        await _repository.updateIsDone(taskToUpdate.id, !taskToUpdate.isDone);
+      } catch (e) {
+        emit(TaskError());
       }
-    }catch(e){
-      emit(TaskError());
     }
+  }
+
+
+  Future<void> _onAddTask(AddTask event, Emitter<TaskState> emit) async {
+    await _repository.insertTask(
+      TasksCompanion.insert(
+        title: event.title,
+        description: event.description ?? "",
+      ),
+    );
+  }
+
+  Future<void> _onEditTask(EditTask event, Emitter<TaskState> emit) async {
+    if(state is TaskLoaded){
+      final current = (state as TaskLoaded).tasks;
+      final taskToUpdate = current.firstWhere((t)=>t.id==event.id);
+
+      final updatedTask = taskToUpdate.copyWith(
+        title: event.title ?? taskToUpdate.title,
+        description: event.description ?? taskToUpdate.description,
+        createdAt: event.createAt ?? taskToUpdate.createdAt,
+      );
+
+      // Cập nhật vào DB
+      await _repository.updateTask(updatedTask);
+
+      // Cập nhật UI
+      final updatedList = current.map((t) => t.id == event.id ? updatedTask : t).toList();
+      emit(TaskLoaded(updatedList));
+    }
+  }
+
+  Future<void> _onDeleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+    await _repository.deleteTask(event.id);
   }
 }

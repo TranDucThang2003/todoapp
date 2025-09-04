@@ -2,7 +2,7 @@ import 'package:chart_example/views/home/components/list_notes.dart';
 import 'package:chart_example/views/home/components/list_task.dart';
 import 'package:chart_example/views/task_action/task_form_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../task_action/note_form_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -106,7 +106,10 @@ class _HomePage extends State<HomePage> {
               PageRouteBuilder(pageBuilder: (context,_,__) => TaskFormScreen()),
             );
           } else {
-            return;
+            Navigator.push(
+              context,
+              PageRouteBuilder(pageBuilder: (context,_,__) => NoteFormScreen()),
+            );
           }
         },
         child: Icon(Icons.add),

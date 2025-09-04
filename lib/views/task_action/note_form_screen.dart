@@ -1,38 +1,44 @@
-import 'package:chart_example/blocs/task_bloc/task_bloc.dart';
-import 'package:chart_example/blocs/task_bloc/task_event.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../blocs/data/data_sources/app_database.dart';
+import '../../blocs/note_bloc/note_bloc.dart';
+import '../../blocs/note_bloc/note_event.dart';
 
-class TaskFormScreen extends StatefulWidget {
-  final Task? task;
+class NoteFormScreen extends StatefulWidget {
+  final Note? note;
 
-  const TaskFormScreen({super.key, this.task});
+  const NoteFormScreen({super.key, this.note});
 
   @override
-  State<StatefulWidget> createState() => _TaskFormScreen();
+  State<StatefulWidget> createState() => _NoteFormScreen();
 }
 
-class _TaskFormScreen extends State<TaskFormScreen> {
+class _NoteFormScreen extends State<NoteFormScreen> {
   late TextEditingController _titleController;
 
-  late TextEditingController _descriptionController;
+  late TextEditingController _contentController;
 
   late DateTime _selectedDate;
+
+  File? _image;
+  String? _imagePath;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(
-      text: widget.task != null ? widget.task!.title : "",
+      text: widget.note != null ? widget.note!.title : "",
     );
-    _descriptionController = TextEditingController(
-      text: widget.task != null ? widget.task!.description : "",
+    _contentController = TextEditingController(
+      text: widget.note != null ? widget.note!.content : "",
     );
-    _selectedDate = widget.task != null
-        ? widget.task!.createdAt
+    _selectedDate = widget.note != null
+        ? widget.note!.createdAt
         : DateTime.now();
   }
 
@@ -51,18 +57,39 @@ class _TaskFormScreen extends State<TaskFormScreen> {
     }
   }
 
+  Future<void> _pickAndSaveImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile == null) return;
+
+    // copy ảnh vào bộ nhớ của app
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String newPath = '${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+
+    final File newImage = await File(pickedFile.path).copy(newPath);
+
+    setState(() {
+      _image = newImage;
+      _imagePath = newPath;
+    });
+
+    // // Lấy đường dẫn này để lưu vào DB
+    // print("Đường dẫn lưu trong DB: $newPath");
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isAdd = widget.task == null;
+    final isAdd = widget.note == null;
     return Scaffold(
       appBar: AppBar(
         title: isAdd
             ? Text(
-                "ADD TASK",
+                "ADD NOTE",
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               )
             : Text(
-                "EDIT TASK",
+                "EDIT NOTE",
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
         centerTitle: true,
@@ -77,20 +104,20 @@ class _TaskFormScreen extends State<TaskFormScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                hintText: "Task title",
+                hintText: "Note title",
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: TextField(
-              controller: _descriptionController,
+              controller: _contentController,
               maxLines: 5,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                hintText: "Task description...",
+                hintText: "Note content...",
               ),
             ),
           ),
@@ -112,6 +139,24 @@ class _TaskFormScreen extends State<TaskFormScreen> {
               ],
             ),
           ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _image != null
+                  ? Image.file(
+                      _image!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    )
+                  : Text("Chưa chọn ảnh"),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _pickAndSaveImage,
+                child: Text("Chọn ảnh từ thư viện"),
+              ),
+            ],
+          ),
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: GestureDetector(
@@ -121,24 +166,27 @@ class _TaskFormScreen extends State<TaskFormScreen> {
                   return;
                 }
                 isAdd
-                    ? context.read<TaskBloc>().add(
-                        AddTask(
+                    ? context.read<NoteBloc>().add(
+                        AddNote(
                           title: _titleController.text,
-                          description: _descriptionController.text,
+                          content: _contentController.text,
+                          createAt: _selectedDate,
+                          imagePath: _imagePath
                         ),
                       )
-                    : context.read<TaskBloc>().add(
-                        EditTask(
-                          id: widget.task!.id,
-                          title: _titleController.text != widget.task!.title
+                    : context.read<NoteBloc>().add(
+                        EditNote(
+                          id: widget.note!.id,
+                          title: _titleController.text != widget.note!.title
                               ? _titleController.text
                               : null,
-                          description: _descriptionController.text != widget.task!.title
-                              ? _descriptionController.text
+                          content: _contentController.text != widget.note!.title
+                              ? _contentController.text
                               : null,
-                          createAt: _selectedDate != widget.task!.createdAt
+                          createAt: _selectedDate != widget.note!.createdAt
                               ? _selectedDate
                               : null,
+                          imagePath: _imagePath
                         ),
                       );
                 Navigator.pop(context);

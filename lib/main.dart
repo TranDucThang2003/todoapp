@@ -1,14 +1,26 @@
+import 'package:chart_example/blocs/data/repositories/task_repository.dart';
+import 'package:chart_example/blocs/note_bloc/note_bloc.dart';
+import 'package:chart_example/blocs/note_bloc/note_event.dart';
 import 'package:chart_example/blocs/task_bloc/task_bloc.dart';
 import 'package:chart_example/blocs/task_bloc/task_event.dart';
 import 'package:chart_example/views/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'blocs/data/data_sources/app_database.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final database = AppDatabase(); // Khởi tạo DB
+  final taskRepository = TaskRepository(database);
+  // final noteRepository = NoteRepository(database);
   runApp(
     MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => TaskBloc()..add(LoadTask()))],
+      providers: [
+        BlocProvider(create: (_) => TaskBloc(taskRepository)..add(LoadTask())),
+        BlocProvider(create: (_) => NoteBloc()..add(LoadNote())),
+      ],
       child: MyApp(),
     ),
   );
