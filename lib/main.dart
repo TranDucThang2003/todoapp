@@ -8,18 +8,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/data/data_sources/app_database.dart';
+import 'blocs/data/repositories/note_repository.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   final database = AppDatabase(); // Khởi tạo DB
   final taskRepository = TaskRepository(database);
-  // final noteRepository = NoteRepository(database);
+  final noteRepository = NoteRepository(database);
   runApp(
     MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => TaskBloc(taskRepository)..add(LoadTask())),
-        BlocProvider(create: (_) => NoteBloc()..add(LoadNote())),
+        BlocProvider(create: (_) => NoteBloc(noteRepository)..add(LoadNote())),
       ],
       child: MyApp(),
     ),

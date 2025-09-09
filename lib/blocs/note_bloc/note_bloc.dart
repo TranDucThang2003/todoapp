@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chart_example/blocs/data/repositories/note_repository.dart';
 import 'package:chart_example/blocs/note_bloc/note_event.dart';
 import 'package:chart_example/blocs/note_bloc/note_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,27 +8,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/data_sources/app_database.dart';
 
 class NoteBloc extends Bloc<NoteEvent, NoteState> {
-  NoteBloc(NoteRe) : super(NoteInitial()) {
+  final NoteRepository _noteRepository;
+
+  NoteBloc(this._noteRepository) : super(NoteInitial()) {
     on<LoadNote>(_onLoadNote);
     on<AddNote>(_onAddNote);
     on<EditNote>(_onEditNote);
     on<DeleteNote>(_onDeleteNote);
   }
 
-  void _onLoadNote(LoadNote event, Emitter<NoteState> emit) {
+  Future<void> _onLoadNote(LoadNote event, Emitter<NoteState> emit) async {
+    await emit.forEach(
+        _noteRepository.watchAllNote(),
+        onData: (notes) => NoteLoaded(notes: notes),
+        onError: (_,__)=>NoteError());
   }
 
-  void _onAddNote(AddNote event, Emitter<NoteState> emit) {
-    if (state is NoteLoaded) {
-      final current = (state as NoteLoaded).notes;
-      final newNote = Note(
-        id: current.length + 1,
-        title: event.title,
-        content: event.content,
-        imagePath: event.imagePath,
-        createdAt: event.createAt,
+  Future<void> _onAddNote(AddNote event, Emitter<NoteState> emit) async {
+    if(state is! NoteLoaded) return;
+
+    try{
+      await _noteRepository.insertNote(
+        NotesCompanion.insert(
+          title: event.title,
+          content: event.content,
+          imagePath: event.imagePath,
+          createdAt: event.createAt,);
       );
-      emit(NoteLoaded(notes: [...current, newNote]));
+    }catch(e){
+      emit(NoteError());
     }
   }
 
