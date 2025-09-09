@@ -40,6 +40,11 @@ class _NoteFormScreen extends State<NoteFormScreen> {
     _selectedDate = widget.note != null
         ? widget.note!.createdAt
         : DateTime.now();
+
+    if (widget.note?.imagePath != null) {
+      _imagePath = widget.note!.imagePath;
+      _image = File(_imagePath!);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -59,13 +64,16 @@ class _NoteFormScreen extends State<NoteFormScreen> {
 
   Future<void> _pickAndSaveImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
 
     if (pickedFile == null) return;
 
     // copy ảnh vào bộ nhớ của app
     final Directory appDir = await getApplicationDocumentsDirectory();
-    final String newPath = '${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+    final String newPath =
+        '${appDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
 
     final File newImage = await File(pickedFile.path).copy(newPath);
 
@@ -73,9 +81,6 @@ class _NoteFormScreen extends State<NoteFormScreen> {
       _image = newImage;
       _imagePath = newPath;
     });
-
-    // // Lấy đường dẫn này để lưu vào DB
-    // print("Đường dẫn lưu trong DB: $newPath");
   }
 
   @override
@@ -171,7 +176,7 @@ class _NoteFormScreen extends State<NoteFormScreen> {
                           title: _titleController.text,
                           content: _contentController.text,
                           createAt: _selectedDate,
-                          imagePath: _imagePath
+                          imagePath: _imagePath,
                         ),
                       )
                     : context.read<NoteBloc>().add(
@@ -180,13 +185,16 @@ class _NoteFormScreen extends State<NoteFormScreen> {
                           title: _titleController.text != widget.note!.title
                               ? _titleController.text
                               : null,
-                          content: _contentController.text != widget.note!.title
+                          content:
+                              _contentController.text != widget.note!.content
                               ? _contentController.text
                               : null,
                           createAt: _selectedDate != widget.note!.createdAt
                               ? _selectedDate
                               : null,
-                          imagePath: _imagePath
+                          imagePath: _imagePath != widget.note!.imagePath
+                              ? _imagePath
+                              : null,
                         ),
                       );
                 Navigator.pop(context);

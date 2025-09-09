@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chart_example/blocs/data/repositories/note_repository.dart';
 import 'package:chart_example/blocs/note_bloc/note_event.dart';
 import 'package:chart_example/blocs/note_bloc/note_state.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/data_sources/app_database.dart';
@@ -19,54 +20,57 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
   Future<void> _onLoadNote(LoadNote event, Emitter<NoteState> emit) async {
     await emit.forEach(
-        _noteRepository.watchAllNote(),
-        onData: (notes) => NoteLoaded(notes: notes),
-        onError: (_,__)=>NoteError());
+      _noteRepository.watchAllNote(),
+      onData: (notes) => NoteLoaded(notes: notes),
+      onError: (_, __) => NoteError(),
+    );
   }
 
   Future<void> _onAddNote(AddNote event, Emitter<NoteState> emit) async {
-    if(state is! NoteLoaded) return;
+    if (state is! NoteLoaded) return;
 
-    try{
+    try {
       await _noteRepository.insertNote(
         NotesCompanion.insert(
           title: event.title,
-          content: event.content,
-          imagePath: event.imagePath,
-          createdAt: event.createAt,);
+          content: Value(event.content),
+          imagePath: Value(event.imagePath),
+          createdAt: Value(event.createAt),
+        ),
       );
-    }catch(e){
+    } catch (e) {
       emit(NoteError());
     }
   }
 
-  void _onEditNote(EditNote event, Emitter<NoteState> emit) {
-    if (state is NoteLoaded) {
-      final current = (state as NoteLoaded).notes;
+  Future<void> _onEditNote(EditNote event, Emitter<NoteState> emit) async {
+    if (state is! NoteLoaded) return;
 
-      final updated = current.map((note) {
-        if (note.id == event.id) {
-          return Note(
-            id: event.id,
-            title: event.title ?? note.title,
-            createdAt: event.createAt ?? DateTime.now(),
-            imagePath: event.imagePath,
-            content: event.content ?? note.content,
-          );
-        }
-        return note;
-      }).toList();
-      emit(NoteLoaded(notes: updated));
+    try {
+      final currentNotes = (state as NoteLoaded).notes;
+      final noteToUpdate = currentNotes.firstWhere((n) => n.id == event.id);
+      final updatedNote = noteToUpdate.copyWith(
+        title: event.title ?? noteToUpdate.title,
+        content: event.content != null
+            ? Value(event.content)
+            : const Value.absent(),
+        imagePath: event.imagePath != null
+            ? Value(event.imagePath)
+            : const Value.absent(),
+        createdAt: event.createAt ?? noteToUpdate.createdAt,
+      );
+      await _noteRepository.updateNote(updatedNote);
+    } catch (e) {
+      emit(NoteError());
     }
   }
 
-  void _onDeleteNote(DeleteNote event, Emitter<NoteState> emit) {
-    if (state is NoteLoaded) {
-      final notes = (state as NoteLoaded).notes;
-
-      final updated = notes.where((note) => note.id != event.id).toList();
-
-      emit(NoteLoaded(notes: updated));
+  Future<void> _onDeleteNote(DeleteNote event, Emitter<NoteState> emit) async {
+    if (state is! NoteLoaded) return;
+    try {
+      await _noteRepository.deleteNote(event.id);
+    } catch (e) {
+      emit(NoteError());
     }
   }
 }

@@ -125,6 +125,7 @@ class _TaskFormScreen extends State<TaskFormScreen> {
                         AddTask(
                           title: _titleController.text,
                           description: _descriptionController.text,
+                          createAt: _selectedDate
                         ),
                       )
                     : context.read<TaskBloc>().add(

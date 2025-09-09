@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/note_bloc/note_bloc.dart';
+import '../../../utils/helpers.dart';
 
 class ListNotes extends StatefulWidget {
   const ListNotes({super.key});
@@ -20,11 +21,30 @@ class _ListNotes extends State<ListNotes> {
       child: BlocBuilder<NoteBloc, NoteState>(
         builder: (context, state) {
           if (state is NoteLoaded) {
-            return ListView.builder(
-              itemCount: state.notes.length,
-              itemBuilder: (context, index) {
-                return NoteItem(note: state.notes[index]);
-              },
+            final groupedNotes = groupNotesByDate(state.notes);
+            final sortedDates = groupedNotes.keys.toList()
+              ..sort((a, b) => b.compareTo(a));
+            return ListView(
+              children: sortedDates.map((date) {
+                final tasks = groupedNotes[date]!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(
+                        "${date.day}/${date.month}/${date.year}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ...tasks.map((note) => NoteItem(note: note)),
+                  ],
+                );
+              }).toList(),
             );
           }
           return const Center(child: CircularProgressIndicator());

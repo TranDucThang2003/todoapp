@@ -125,7 +125,6 @@ class _HomePage extends State<HomePage> {
         onTap: (indexItem) {
           setState(() {
             _currentIndex = indexItem;
-            print(_currentIndex);
           });
         },
       ),

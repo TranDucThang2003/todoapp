@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../data/data_sources/app_database.dart';
 
 abstract class TaskEvent extends Equatable{
   @override
@@ -17,7 +16,8 @@ class ToggleTask extends TaskEvent {
 class AddTask extends TaskEvent {
   final String title;
   final String? description;
-  AddTask({required this.title, this.description});
+  final DateTime? createAt;
+  AddTask({this.createAt,required this.title, this.description});
 }
 
 class EditTask extends TaskEvent {

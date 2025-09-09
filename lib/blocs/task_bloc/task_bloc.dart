@@ -1,6 +1,7 @@
 import 'package:chart_example/blocs/data/repositories/task_repository.dart';
 import 'package:chart_example/blocs/task_bloc/task_event.dart';
 import 'package:chart_example/blocs/task_bloc/task_state.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/data_sources/app_database.dart';
@@ -46,6 +47,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         TasksCompanion.insert(
           title: event.title,
           description: event.description ?? "",
+          createdAt: Value(event.createAt ?? DateTime.now())
         ),
       );
     }catch(e){
