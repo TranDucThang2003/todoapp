@@ -6,14 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/note_bloc/note_bloc.dart';
 import '../../../utils/helpers.dart';
 
-class ListNotes extends StatefulWidget {
+class ListNotes extends StatelessWidget {
   const ListNotes({super.key});
 
-  @override
-  State<StatefulWidget> createState() => _ListNotes();
-}
-
-class _ListNotes extends State<ListNotes> {
   @override
   Widget build(BuildContext context) {
     return Padding(

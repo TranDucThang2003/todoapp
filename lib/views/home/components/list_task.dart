@@ -6,14 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:chart_example/utils/helpers.dart';
 
-class ListTask extends StatefulWidget {
+class ListTask extends StatelessWidget {
   const ListTask({super.key});
 
-  @override
-  State<StatefulWidget> createState() => _ListTask();
-}
-
-class _ListTask extends State<ListTask> {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -21,7 +16,9 @@ class _ListTask extends State<ListTask> {
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           if (state is TaskLoaded) {
-            if(state.tasks.isEmpty) return Center(child: Text("không có công việc nào!"),);
+            if (state.tasks.isEmpty) {
+              return Center(child: Text("không có công việc nào!"));
+            }
             final groupedTasks = groupTasksByDate(state.tasks);
             final sortedDates = groupedTasks.keys.toList()
               ..sort((a, b) => b.compareTo(a));
