@@ -21,6 +21,8 @@ class _ListNotes extends State<ListNotes> {
       child: BlocBuilder<NoteBloc, NoteState>(
         builder: (context, state) {
           if (state is NoteLoaded) {
+            if(state.notes.isEmpty) return Center(child: Text("không có lời nhắc nào!"),);
+
             final groupedNotes = groupNotesByDate(state.notes);
             final sortedDates = groupedNotes.keys.toList()
               ..sort((a, b) => b.compareTo(a));

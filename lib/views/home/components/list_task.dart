@@ -21,6 +21,7 @@ class _ListTask extends State<ListTask> {
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           if (state is TaskLoaded) {
+            if(state.tasks.isEmpty) return Center(child: Text("không có công việc nào!"),);
             final groupedTasks = groupTasksByDate(state.tasks);
             final sortedDates = groupedTasks.keys.toList()
               ..sort((a, b) => b.compareTo(a));
